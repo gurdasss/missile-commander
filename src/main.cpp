@@ -4,12 +4,14 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <vector>
-#include <iostream> // don't forget to remove it
 
 void updateMissiles(std::vector<Missile> &missiles);
 
 void setupPlayerMissile(Missile &playerMissile);
 void setupEnemyMissile(Missile &enemyMissile);
+
+void setupBigBuilding(Rectangle2D &bigBuilding);
+void setupSmallBuilding(Rectangle2D &smallBuildings);
 
 int main()
 {
@@ -32,6 +34,36 @@ int main()
     // a list that will store all the shot missiles
     std::vector<Missile> missiles{};
 
+    // a list that will store all the buildings
+    std::vector<Rectangle2D> buildings{};
+    constexpr float maxBigBuildings{3.0f};
+
+    for (float i = 0; i < maxBigBuildings; ++i)
+    {
+        // set buildings width and height respectively
+        Rectangle2D bigBuilding{80, 80};
+
+        // because we want to show the last building inside the screen
+        const float newScreenWidth{screenW - bigBuilding.getWidth()};
+
+        // calculated gap between each building using new width
+        const float gap{newScreenWidth / maxBigBuildings};
+
+        // to keep a symmetry and consistency
+        // innerPadding + outerPadding = (gap / 2)
+        constexpr float innerPadding{100.0f};
+        constexpr float outerPadding{20.0f};
+
+        bigBuilding.setPosition(Vector2{
+            (gap + innerPadding) * i + outerPadding,
+            screenH - bigBuilding.getHeight(),
+        });
+
+        // building's color is GRAY by default
+
+        buildings.push_back(bigBuilding);
+    }
+
     while (!WindowShouldClose())
     {
         // detect if user had clicked on the screen
@@ -48,6 +80,11 @@ int main()
         }
 
         static int s_frameCounter{};
+
+        // assuming FPS is set to 60 then
+        // 60 frames: one second
+        // 120 frames: two second
+        // ...
         constexpr int secondsInFrames{60};
 
         // after certain seconds generate
@@ -77,6 +114,10 @@ int main()
             DrawLineV(missile.getStartPos(), missile.getEndPos(), missile.getTint());
             DrawCircleV(missile.getEndPos(), 5.0f, RED);
         }
+
+        // DRAW ALL BUILDINGS
+        for (const Rectangle2D &building : buildings)
+            DrawRectangleRec(building.getRectangle(), building.getTint());
 
         DrawFPS(0, 0);
 
