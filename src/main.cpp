@@ -45,12 +45,23 @@ int main()
             // add the newly created missile
             // at the end of the list
             missiles.push_back(playerMissile);
+        }
 
+        static int s_frameCounter{};
+        constexpr int secondsInFrames{60};
+
+        // after certain seconds generate
+        // enemy's missile
+        if (++s_frameCounter == secondsInFrames)
+        {
             Missile enemyMissile{};
 
             setupEnemyMissile(enemyMissile);
 
             missiles.push_back(enemyMissile);
+
+            // rest the frame counter
+            s_frameCounter = 0;
         }
 
         // UPDATE ALL MISSILES
@@ -75,6 +86,42 @@ int main()
     CloseWindow();
 
     return 0;
+}
+
+void updateMissiles(std::vector<Missile> &missiles)
+{
+
+    // return back to caller if missiles list is empty
+    if (missiles.empty())
+        return;
+
+    for (auto missile{missiles.begin()}; missile < missiles.end(); ++missile)
+    {
+        // now, shoot a new missile towards its target position
+        // based on certain distance
+        // after every frame, increment the end position of missile
+        missile->setEndPos(Vector2MoveTowards(missile->getEndPos(), missile->getTargetPos(), missile->getMissileDistance()));
+
+        // increase missile's distance by its respective speed
+        missile->updateMissileDistance(missile->getMissileSpeed());
+
+        // these numbers are set using trial-and-error
+        constexpr float minDistance{0.0f};
+        constexpr float maxDistance{100.0f};
+
+        // clamp missile's distance
+        // so that the value does'nt overflow
+        missile->setMissileDistance(Clamp(missile->getMissileDistance(), minDistance, maxDistance));
+
+        // if the missile reaches its target position
+        // remove it from the list
+
+        // Vector2Equals return int
+        // zero means false
+        // non-zero means true
+        if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
+            missiles.erase(missile);
+    }
 }
 
 void setupPlayerMissile(Missile &playerMissile)
@@ -103,43 +150,8 @@ void setupPlayerMissile(Missile &playerMissile)
     // set missile's color
     playerMissile.setTint(GREEN);
 
-    // now, the clicked position as target position
+    // now, set the clicked position as target position
     playerMissile.setTargetPos(GetMousePosition());
-}
-
-void updateMissiles(std::vector<Missile> &missiles)
-{
-
-    if (missiles.empty())
-        return;
-
-    for (auto missile = missiles.begin(); missile < missiles.end(); ++missile)
-    {
-        // now, shoot a new missile towards its target position
-        // based on certain distance
-        // after every frame, increment the end position of missile
-        missile->setEndPos(Vector2MoveTowards(missile->getEndPos(), missile->getTargetPos(), missile->getMissileDistance()));
-
-        // increase missile's distance by its respective speed
-        missile->updateMissileDistance(missile->getMissileSpeed());
-
-        // these numbers are set using trial-and-error
-        constexpr float minDistance{0.0f};
-        constexpr float maxDistance{100.0f};
-
-        // clamp missile's distance
-        // so that the value does'nt overflow
-        missile->setMissileDistance(Clamp(missile->getMissileDistance(), minDistance, maxDistance));
-
-        // if the missile reaches its target position
-        // remove it from the list
-
-        // Vector2Equals return int
-        // zero means false
-        // non-zero means true
-        if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
-            missiles.erase(missile);
-    }
 }
 
 void setupEnemyMissile(Missile &enemyMissile)
