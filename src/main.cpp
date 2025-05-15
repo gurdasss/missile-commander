@@ -94,7 +94,8 @@ void setupPlayerMissile(Missile &playerMissile)
     // set player's missile distance
     // missile's distance is zero by default
 
-    constexpr float playerMissileSpeed{0.01f};
+    // these numbers are set using trial-and-error
+    constexpr float playerMissileSpeed{1.0f};
 
     // set the speed of player's missile
     playerMissile.setMissileSpeed(playerMissileSpeed);
@@ -112,24 +113,23 @@ void updateMissiles(std::vector<Missile> &missiles)
     if (missiles.empty())
         return;
 
-    for (Missile &missile : missiles)
+    for (auto missile = missiles.begin(); missile < missiles.end(); ++missile)
     {
         // now, shoot a new missile towards its target position
         // based on certain distance
         // after every frame, increment the end position of missile
-        missile.setEndPos(Vector2Lerp(missile.getEndPos(), missile.getTargetPos(), missile.getMissileDistance()));
+        missile->setEndPos(Vector2MoveTowards(missile->getEndPos(), missile->getTargetPos(), missile->getMissileDistance()));
 
         // increase missile's distance by its respective speed
-        missile.updateMissileDistance(missile.getMissileSpeed());
+        missile->updateMissileDistance(missile->getMissileSpeed());
 
+        // these numbers are set using trial-and-error
         constexpr float minDistance{0.0f};
-        constexpr float maxDistance{1.0f};
+        constexpr float maxDistance{100.0f};
 
         // clamp missile's distance
         // so that the value does'nt overflow
-        missile.setMissileDistance(Clamp(missile.getMissileDistance(), minDistance, maxDistance));
-
-        static int missileCount{};
+        missile->setMissileDistance(Clamp(missile->getMissileDistance(), minDistance, maxDistance));
 
         // if the missile reaches its target position
         // remove it from the list
@@ -137,13 +137,8 @@ void updateMissiles(std::vector<Missile> &missiles)
         // Vector2Equals return int
         // zero means false
         // non-zero means true
-        if (Vector2Equals(missile.getEndPos(), missile.getTargetPos()))
-        {
-            missiles.erase(missiles.begin() + missileCount);
-            missileCount = 0;
-        }
-
-        ++missileCount;
+        if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
+            missiles.erase(missile);
     }
 }
 
@@ -163,7 +158,8 @@ void setupEnemyMissile(Missile &enemyMissile)
     // set enemy's missile distance
     // missile's distance is zero by default
 
-    constexpr float enemyMissileSpeed{0.001f};
+    // these numbers are set using trial-and-error
+    constexpr float enemyMissileSpeed{0.01f};
 
     // set the speed of enemy's missile
     enemyMissile.setMissileSpeed(enemyMissileSpeed);
