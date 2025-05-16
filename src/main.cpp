@@ -4,6 +4,8 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <forward_list> // for std::forward_list()
+#include <optional>     // for std::optional
+#include <cassert>      // for assert
 
 void updateMissiles(std::forward_list<Missile> &missiles);
 
@@ -14,6 +16,8 @@ void setupBigBuildings(std::forward_list<Rectangle2D> &buildings);
 void setupSmallBuildings(std::forward_list<Rectangle2D> &buildings);
 
 void placeBuildings(std::forward_list<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding);
+
+std::optional<float> getTallestBuilding(const std::forward_list<Rectangle2D> &buildings);
 
 int main()
 {
@@ -34,6 +38,8 @@ int main()
     */
 
     // a list that will store all the shot missiles
+    // it's a singly-linked list so iteration
+    // will only happen from the front of the list.
     std::forward_list<Missile> missiles{};
 
     // a list that will store all the buildings
@@ -48,6 +54,19 @@ int main()
 
     setupSmallBuildings(buildings);
 
+    // this object is a class type (std::optional)
+    // so make sure before it's non-null
+    // before using it
+    // also make sure that you call getTallestBuilding()
+    // on a non-empty list
+    const std::optional<float> tallestBuilding{getTallestBuilding(buildings)};
+
+    assert(tallestBuilding && "Something went wrong here!");
+
+    // this will help us when to start detecting
+    // for collision with all buildings
+    const float buildingCollisionThreshold{screenH - *tallestBuilding};
+
     while (!WindowShouldClose())
     {
         // detect if user had clicked on the screen
@@ -59,7 +78,7 @@ int main()
             setupPlayerMissile(playerMissile);
 
             // add the newly created missile
-            // at the end of the list
+            // at the front of the list
             missiles.push_front(playerMissile);
         }
 
@@ -79,6 +98,8 @@ int main()
 
             setupEnemyMissile(enemyMissile);
 
+            // add the newly created missile
+            // at the front of the list
             missiles.push_front(enemyMissile);
 
             // rest the frame counter
@@ -151,7 +172,8 @@ void updateMissiles(std::forward_list<Missile> &missiles)
         // non-zero means true
         if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
         {
-            // An iterator pointing to the element following
+            // erase_after(itr) returns
+            // an iterator pointing to the element following
             // the one that was erased, or
             // end() if no such element exists.
             missile = missiles.erase_after(previousMissile);
@@ -300,4 +322,21 @@ void setupSmallBuildings(std::forward_list<Rectangle2D> &buildings)
                    // move this set of buildings to right side
                    // this below multiplication is based on trial-and-error
                    outerPadding * 3.35f);
+}
+
+std::optional<float> getTallestBuilding(const std::forward_list<Rectangle2D> &buildings)
+{
+    // return null if building list is empty
+    if (buildings.empty())
+        return std::nullopt;
+
+    float tallestBuilding{};
+
+    for (const Rectangle2D &building : buildings)
+    {
+        if (tallestBuilding < building.getHeight())
+            tallestBuilding = building.getHeight();
+    }
+
+    return tallestBuilding;
 }
