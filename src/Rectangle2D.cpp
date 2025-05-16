@@ -1,6 +1,12 @@
 #include "Rectangle2D.h"
 #include <raylib.h>
 
+Rectangle2D::Rectangle2D(float width, float height)
+    : m_rectangle{0, 0, width, height}
+{
+    // a constructor's body is typically left empty.
+}
+
 void Rectangle2D::setPosition(const Vector2 &position)
 {
     m_rectangle.x = position.x;

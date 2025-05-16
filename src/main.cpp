@@ -10,12 +10,10 @@ void updateMissiles(std::vector<Missile> &missiles);
 void setupPlayerMissile(Missile &playerMissile);
 void setupEnemyMissile(Missile &enemyMissile);
 
-void setupBigBuilding(Rectangle2D &bigBuilding);
-void setupSmallBuilding(Rectangle2D &smallBuildings);
+void setupBigBuildings(std::vector<Rectangle2D> &buildings);
+void setupSmallBuildings(std::vector<Rectangle2D> &buildings);
 
-// TODO: figure out how to reduce these no. of parameters
-void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, float screenW, float innerPadding, float outerPadding);
-void placeBuilding(Rectangle2D &building, const Vector2 &position);
+void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding);
 
 int main()
 {
@@ -41,25 +39,9 @@ int main()
     // a list that will store all the buildings
     std::vector<Rectangle2D> buildings{};
 
-    {
-        // constants related to big buildings
-        constexpr float maxBigBuildings{3.0f};
-        constexpr float innerPadding{100.0f};
-        constexpr float outerPadding{20.0f};
+    setupBigBuildings(buildings);
 
-        placeBuildings(buildings, maxBigBuildings, screenW, innerPadding, outerPadding);
-    }
-
-    {
-
-        // constants related to small buildings
-        constexpr float maxSmallBuildings{3.0f};
-        constexpr float innerPadding{0.0f};
-        constexpr float outerPadding{145.0f};
-        constexpr float bigBuildingGap{240.0f};
-
-        placeBuildings(buildings, maxSmallBuildings, bigBuildingGap, innerPadding, outerPadding);
-    }
+    setupSmallBuildings(buildings);
 
     while (!WindowShouldClose())
     {
@@ -225,18 +207,18 @@ void setupEnemyMissile(Missile &enemyMissile)
     });
 }
 
-void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, float screenW, float innerPadding, float outerPadding)
+void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding)
 {
-
     for (float i = 0; i < static_cast<float>(noOfBuildings); ++i)
     {
-        Rectangle2D building{};
+        // set building's width and height respectively
+        Rectangle2D building{buildingW, buildingH};
 
-        // because we want to show the last building inside the screen
-        const float newScreenWidth{screenW - building.getWidth()};
+        // because we want to show the last building inside the width
+        const float newWidth{width - building.getWidth()};
 
         // calculated gap between each building using new width
-        const float gap{newScreenWidth / static_cast<float>(noOfBuildings)};
+        const float gap{newWidth / static_cast<float>(noOfBuildings)};
 
         // to keep a symmetry and consistency
         // innerPadding + outerPadding = (gap / 2)
@@ -246,31 +228,40 @@ void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, floa
             static_cast<float>(GetScreenHeight()) - building.getHeight(),
         });
 
+        building.setTint(color);
+
         buildings.push_back(building);
     }
 }
 
-void setupBigBuilding(Rectangle2D &bigBuilding)
+void setupBigBuildings(std::vector<Rectangle2D> &buildings)
 {
     constexpr float bigBuildingW{80.0f};
     constexpr float bigBuildingH{80.0f};
+    constexpr Color bigBuildingColor{GRAY};
 
-    // set building's width and height respectively
-    bigBuilding.setWidth(bigBuildingW);
-    bigBuilding.setHeight(bigBuildingH);
+    // constants related to big buildings
+    constexpr float maxBigBuildings{3.0f};
+    constexpr float innerPadding{100.0f};
+    constexpr float outerPadding{20.0f};
 
-    // building's color is GRAY by default
+    placeBuildings(buildings, maxBigBuildings, bigBuildingW, bigBuildingH,
+                   bigBuildingColor, static_cast<float>(GetScreenWidth()), innerPadding, outerPadding);
 }
 
-void setupSmallBuilding(Rectangle2D &smallBuilding)
+void setupSmallBuildings(std::vector<Rectangle2D> &buildings)
 {
     constexpr float smallBuildingW{40.0f};
     constexpr float smallBuildingH{40.0f};
+    constexpr Color smallBuildingColor{LIGHTGRAY};
 
-    // set building's width and height respectively
-    smallBuilding.setWidth(smallBuildingW);
-    smallBuilding.setHeight(smallBuildingH);
+    // constants related to small buildings
+    constexpr float maxSmallBuildings{3.0f};
+    constexpr float innerPadding{0.0f};
+    constexpr float outerPadding{145.0f};
+    constexpr float bigBuildingGap{240.0f};
 
-    // building's color is GRAY by default
-    smallBuilding.setTint(LIGHTGRAY);
+    placeBuildings(buildings, maxSmallBuildings, smallBuildingW, smallBuildingH,
+                   smallBuildingColor, bigBuildingGap,
+                   innerPadding, outerPadding);
 }

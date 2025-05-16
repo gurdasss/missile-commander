@@ -6,6 +6,15 @@
 class Rectangle2D
 {
 public:
+    /*
+        compiler will not generate an implicit default constructor
+        if a user defined constructor already exist. As a result,
+        we're explicitly asking the compiler to generate a default
+        constructor for us.
+    */
+    Rectangle2D() = default;
+    Rectangle2D(float width, float height);
+
     void setPosition(const Vector2 &position);
     Vector2 getPosition() const;
 
