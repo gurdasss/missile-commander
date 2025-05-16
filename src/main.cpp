@@ -19,6 +19,8 @@ void placeBuildings(std::forward_list<Rectangle2D> &buildings, int noOfBuildings
 
 std::optional<float> getTallestBuilding(const std::forward_list<Rectangle2D> &buildings);
 
+void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rectangle2D> &buildings, float buildingCollisionThreshold);
+
 int main()
 {
     constexpr int screenW{800};
@@ -109,6 +111,8 @@ int main()
         // UPDATE ALL MISSILES
         updateMissiles(missiles);
 
+        applyCollisions(missiles, buildings, buildingCollisionThreshold);
+
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
@@ -141,11 +145,6 @@ void updateMissiles(std::forward_list<Missile> &missiles)
     if (missiles.empty())
         return;
 
-    // used to keep track of previous missile
-    // this iterator should always be initialised
-    // with an iterator pointing before the first iterator
-    auto previousMissile{missiles.before_begin()};
-
     for (auto missile{missiles.begin()}; missile != missiles.cend(); ++missile)
     {
         // now, shoot a new missile towards its target position
@@ -163,30 +162,6 @@ void updateMissiles(std::forward_list<Missile> &missiles)
         // clamp missile's distance
         // so that the value does'nt overflow
         missile->setMissileDistance(Clamp(missile->getMissileDistance(), minDistance, maxDistance));
-
-        // if the missile reaches its target position
-        // remove it from the list
-
-        // Vector2Equals return int
-        // zero means false
-        // non-zero means true
-        if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
-        {
-            // erase_after(itr) returns
-            // an iterator pointing to the element following
-            // the one that was erased, or
-            // end() if no such element exists.
-            missile = missiles.erase_after(previousMissile);
-
-            // return back to caller once we reach
-            // the end of the list
-            if (missile == missiles.cend())
-                return;
-        }
-
-        // increment the iterator to point to next iterator
-        // on the list
-        ++previousMissile;
     }
 }
 
@@ -339,4 +314,85 @@ std::optional<float> getTallestBuilding(const std::forward_list<Rectangle2D> &bu
     }
 
     return tallestBuilding;
+}
+
+void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rectangle2D> &buildings, float buildingCollisionThreshold)
+{
+    // return if any of the list is empty
+    // simply return
+    if (missiles.empty() || buildings.empty())
+        return;
+
+    // used to keep track of previous missile
+    // this iterator should always be initialised
+    // with an iterator pointing before the first iterator
+    auto previousMissile{missiles.before_begin()};
+
+    for (auto missile{missiles.begin()}; missile != missiles.cend(); ++missile)
+    {
+        // if the missile reaches its target position
+        // remove it from the list
+
+        // Vector2Equals return int
+        // zero means false
+        // non-zero means true
+        if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
+        {
+            // erase_after(itr) returns
+            // an iterator pointing to the element following
+            // the one that was erased, or
+            // end() if no such element exists.
+            missile = missiles.erase_after(previousMissile);
+
+            // return back to caller once we reach
+            // the end of the list
+            if (missile == missiles.cend())
+                return;
+        }
+        else if (buildingCollisionThreshold < missile->getEndPos().y)
+        {
+            // used to keep track of previous missile
+            // this iterator should always be initialised
+            // with an iterator pointing before the first iterator
+            auto previousBuilding{buildings.before_begin()};
+
+            for (auto building{buildings.begin()}; building != buildings.cend(); ++building)
+            {
+
+                // check if the missile's color is equal to
+                // enemy's missile's color
+                if (ColorIsEqual(missile->getTint(), RED))
+                {
+                    // if so, then check for collision with buildings
+                    if (CheckCollisionPointRec(missile->getEndPos(), building->getRectangle()))
+                    {
+                        // erase_after(itr) returns
+                        // an iterator pointing to the element following
+                        // the one that was erased, or
+                        // end() if no such element exists.
+                        missile = missiles.erase_after(previousMissile);
+
+                        // remove the collided building from the list
+                        building = buildings.erase_after(previousBuilding);
+
+                        // return back to caller once we reach
+                        // the end of the list
+                        if (missile == missiles.cend())
+                            return;
+
+                        if (building == buildings.cend())
+                            return;
+                    }
+                }
+
+                // increment the iterator to point to next iterator
+                // on the list
+                ++previousBuilding;
+            }
+        }
+
+        // increment the iterator to point to next iterator
+        // on the list
+        ++previousMissile;
+    }
 }
