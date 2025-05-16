@@ -6,12 +6,13 @@
 class Rectangle2D
 {
 public:
-    Rectangle2D(float width, float height);
-
     void setPosition(const Vector2 &position);
     Vector2 getPosition() const;
 
+    void setWidth(float width);
     float getWidth() const;
+
+    void setHeight(float width);
     float getHeight() const;
 
     void setTint(const Color &tint);
