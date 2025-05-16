@@ -4,16 +4,17 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <vector>
+#include <forward_list>
 
 void updateMissiles(std::vector<Missile> &missiles);
 
 void setupPlayerMissile(Missile &playerMissile);
 void setupEnemyMissile(Missile &enemyMissile);
 
-void setupBigBuildings(std::vector<Rectangle2D> &buildings);
-void setupSmallBuildings(std::vector<Rectangle2D> &buildings);
+void setupBigBuildings(std::forward_list<Rectangle2D> &buildings);
+void setupSmallBuildings(std::forward_list<Rectangle2D> &buildings);
 
-void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding);
+void placeBuildings(std::forward_list<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding);
 
 int main()
 {
@@ -37,7 +38,7 @@ int main()
     std::vector<Missile> missiles{};
 
     // a list that will store all the buildings
-    std::vector<Rectangle2D> buildings{};
+    std::forward_list<Rectangle2D> buildings{};
 
     // setup all the buildings based on their
     // pre-defined constants and store it
@@ -237,7 +238,35 @@ void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, floa
     }
 }
 
-void setupBigBuildings(std::vector<Rectangle2D> &buildings)
+// FORWARD LIST IMPLEMENTATION
+void placeBuildings(std::forward_list<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding)
+{
+    for (float i{0}; i < static_cast<float>(noOfBuildings); ++i)
+    {
+        // set building's width and height respectively
+        Rectangle2D building{buildingW, buildingH};
+
+        // because we want to show the last building inside the width
+        const float newWidth{width - building.getWidth()};
+
+        // calculated gap between each building using new width
+        const float gap{newWidth / static_cast<float>(noOfBuildings)};
+
+        // to keep a symmetry and consistency
+        // innerPadding + outerPadding = (gap / 2)
+
+        building.setPosition(Vector2{
+            (gap + innerPadding) * i + outerPadding,
+            static_cast<float>(GetScreenHeight()) - building.getHeight(),
+        });
+
+        building.setTint(color);
+
+        buildings.push_front(building);
+    }
+}
+
+void setupBigBuildings(std::forward_list<Rectangle2D> &buildings)
 {
     constexpr float bigBuildingW{80.0f};
     constexpr float bigBuildingH{80.0f};
@@ -252,7 +281,7 @@ void setupBigBuildings(std::vector<Rectangle2D> &buildings)
                    bigBuildingColor, static_cast<float>(GetScreenWidth()), innerPadding, outerPadding);
 }
 
-void setupSmallBuildings(std::vector<Rectangle2D> &buildings)
+void setupSmallBuildings(std::forward_list<Rectangle2D> &buildings)
 {
     constexpr float smallBuildingW{40.0f};
     constexpr float smallBuildingH{40.0f};
