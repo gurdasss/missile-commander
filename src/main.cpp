@@ -3,10 +3,9 @@
 #include "Random.h"
 #include <raylib.h>
 #include <raymath.h>
-#include <vector>
-#include <forward_list>
+#include <forward_list> // for std::forward_list()
 
-void updateMissiles(std::vector<Missile> &missiles);
+void updateMissiles(std::forward_list<Missile> &missiles);
 
 void setupPlayerMissile(Missile &playerMissile);
 void setupEnemyMissile(Missile &enemyMissile);
@@ -35,9 +34,11 @@ int main()
     */
 
     // a list that will store all the shot missiles
-    std::vector<Missile> missiles{};
+    std::forward_list<Missile> missiles{};
 
     // a list that will store all the buildings
+    // it's a singly-linked list so iteration
+    // will only happen from the front of the list.
     std::forward_list<Rectangle2D> buildings{};
 
     // setup all the buildings based on their
@@ -59,7 +60,7 @@ int main()
 
             // add the newly created missile
             // at the end of the list
-            missiles.push_back(playerMissile);
+            missiles.push_front(playerMissile);
         }
 
         static int s_frameCounter{};
@@ -78,7 +79,7 @@ int main()
 
             setupEnemyMissile(enemyMissile);
 
-            missiles.push_back(enemyMissile);
+            missiles.push_front(enemyMissile);
 
             // rest the frame counter
             s_frameCounter = 0;
@@ -112,14 +113,19 @@ int main()
     return 0;
 }
 
-void updateMissiles(std::vector<Missile> &missiles)
+void updateMissiles(std::forward_list<Missile> &missiles)
 {
 
     // return back to caller if missiles list is empty
     if (missiles.empty())
         return;
 
-    for (auto missile{missiles.begin()}; missile < missiles.end(); ++missile)
+    // used to keep track of previous missile
+    // this iterator should always be initialised
+    // with an iterator pointing before the first iterator
+    auto previousMissile{missiles.before_begin()};
+
+    for (auto missile{missiles.begin()}; missile != missiles.cend(); ++missile)
     {
         // now, shoot a new missile towards its target position
         // based on certain distance
@@ -144,7 +150,21 @@ void updateMissiles(std::vector<Missile> &missiles)
         // zero means false
         // non-zero means true
         if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
-            missiles.erase(missile);
+        {
+            // An iterator pointing to the element following
+            // the one that was erased, or
+            // end() if no such element exists.
+            missile = missiles.erase_after(previousMissile);
+
+            // return back to caller once we reach
+            // the end of the list
+            if (missile == missiles.cend())
+                return;
+        }
+
+        // increment the iterator to point to next iterator
+        // on the list
+        ++previousMissile;
     }
 }
 
@@ -211,34 +231,6 @@ void setupEnemyMissile(Missile &enemyMissile)
     });
 }
 
-void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding)
-{
-    for (float i{0}; i < static_cast<float>(noOfBuildings); ++i)
-    {
-        // set building's width and height respectively
-        Rectangle2D building{buildingW, buildingH};
-
-        // because we want to show the last building inside the width
-        const float newWidth{width - building.getWidth()};
-
-        // calculated gap between each building using new width
-        const float gap{newWidth / static_cast<float>(noOfBuildings)};
-
-        // to keep a symmetry and consistency
-        // innerPadding + outerPadding = (gap / 2)
-
-        building.setPosition(Vector2{
-            (gap + innerPadding) * i + outerPadding,
-            static_cast<float>(GetScreenHeight()) - building.getHeight(),
-        });
-
-        building.setTint(color);
-
-        buildings.push_back(building);
-    }
-}
-
-// FORWARD LIST IMPLEMENTATION
 void placeBuildings(std::forward_list<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding)
 {
     for (float i{0}; i < static_cast<float>(noOfBuildings); ++i)
