@@ -39,6 +39,9 @@ int main()
     // a list that will store all the buildings
     std::vector<Rectangle2D> buildings{};
 
+    // setup all the buildings based on their
+    // pre-defined constants and store it
+    // in the building list
     setupBigBuildings(buildings);
 
     setupSmallBuildings(buildings);
@@ -209,7 +212,7 @@ void setupEnemyMissile(Missile &enemyMissile)
 
 void placeBuildings(std::vector<Rectangle2D> &buildings, int noOfBuildings, float buildingW, float buildingH, const Color &color, float width, float innerPadding, float outerPadding)
 {
-    for (float i = 0; i < static_cast<float>(noOfBuildings); ++i)
+    for (float i{0}; i < static_cast<float>(noOfBuildings); ++i)
     {
         // set building's width and height respectively
         Rectangle2D building{buildingW, buildingH};
@@ -261,7 +264,19 @@ void setupSmallBuildings(std::vector<Rectangle2D> &buildings)
     constexpr float outerPadding{145.0f};
     constexpr float bigBuildingGap{240.0f};
 
-    placeBuildings(buildings, maxSmallBuildings, smallBuildingW, smallBuildingH,
+    // place one set of small buildings on left side
+    placeBuildings(buildings, maxSmallBuildings,
+                   smallBuildingW, smallBuildingH,
                    smallBuildingColor, bigBuildingGap,
                    innerPadding, outerPadding);
+
+    // place one set of small buildings on right side
+    placeBuildings(buildings, maxSmallBuildings,
+                   smallBuildingW, smallBuildingH,
+                   smallBuildingColor, bigBuildingGap,
+                   innerPadding,
+
+                   // move this set of buildings to right side
+                   // this below multiplication is based on trial-and-error
+                   outerPadding * 3.35f);
 }
