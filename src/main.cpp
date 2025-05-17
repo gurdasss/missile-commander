@@ -1,4 +1,5 @@
 #include "Rectangle2D.h"
+#include "Explosion.h"
 #include "Missile.h"
 #include "Random.h"
 #include <raylib.h>
@@ -8,6 +9,7 @@
 #include <cassert>      // for assert
 
 void updateMissiles(std::forward_list<Missile> &missiles);
+void updateExplosions(std::forward_list<Explosion> &explosions);
 
 void setupPlayerMissile(Missile &playerMissile);
 void setupEnemyMissile(Missile &enemyMissile);
@@ -19,7 +21,7 @@ void placeBuildings(std::forward_list<Rectangle2D> &buildings, int noOfBuildings
 
 std::optional<float> getTallestBuilding(const std::forward_list<Rectangle2D> &buildings);
 
-void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rectangle2D> &buildings, float buildingCollisionThreshold);
+void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rectangle2D> &buildings, std::forward_list<Explosion> &explosions, float buildingCollisionThreshold);
 
 int main()
 {
@@ -69,6 +71,10 @@ int main()
 
     setupSmallBuildings(buildings);
 
+    // this list will store all the
+    // explosions caused by player's missiles
+    std::forward_list<Explosion> explosions{};
+
     while (!WindowShouldClose())
     {
 
@@ -77,7 +83,7 @@ int main()
         if (buildings.empty())
             break;
         else
-            applyCollisions(missiles, buildings, buildingCollisionThreshold);
+            applyCollisions(missiles, buildings, explosions, buildingCollisionThreshold);
 
         // detect if user had clicked on the screen
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
@@ -98,7 +104,7 @@ int main()
         // 60 frames: one second
         // 120 frames: two second
         // ...
-        constexpr int secondsInFrames{60};
+        constexpr int secondsInFrames{120};
 
         // after certain seconds generate
         // enemy's missile
@@ -119,6 +125,9 @@ int main()
         // UPDATE ALL MISSILES
         updateMissiles(missiles);
 
+        // UPDATE ALL EXPLOSIONS
+        updateExplosions(explosions);
+
         BeginDrawing();
 
         ClearBackground(RAYWHITE);
@@ -133,6 +142,12 @@ int main()
         // DRAW ALL BUILDINGS
         for (const Rectangle2D &building : buildings)
             DrawRectangleRec(building.getRectangle(), building.getTint());
+
+        // UPDATE ALL EXPLOSIONS
+        for (const Explosion &explosion : explosions)
+        {
+            DrawCircleV(explosion.getPosition(), explosion.getRadius(), explosion.getTint());
+        }
 
         DrawFPS(0, 0);
 
@@ -151,15 +166,15 @@ void updateMissiles(std::forward_list<Missile> &missiles)
     if (missiles.empty())
         return;
 
-    for (auto missile{missiles.begin()}; missile != missiles.cend(); ++missile)
+    for (Missile &missile : missiles)
     {
         // now, shoot a new missile towards its target position
         // based on certain distance
         // after every frame, increment the end position of missile
-        missile->setEndPos(Vector2MoveTowards(missile->getEndPos(), missile->getTargetPos(), missile->getMissileDistance()));
+        missile.setEndPos(Vector2MoveTowards(missile.getEndPos(), missile.getTargetPos(), missile.getMissileDistance()));
 
         // increase missile's distance by its respective speed
-        missile->updateMissileDistance(missile->getMissileSpeed());
+        missile.updateMissileDistance(missile.getMissileSpeed());
 
         // these numbers are set using trial-and-error
         constexpr float minDistance{0.0f};
@@ -167,7 +182,40 @@ void updateMissiles(std::forward_list<Missile> &missiles)
 
         // clamp missile's distance
         // so that the value does'nt overflow
-        missile->setMissileDistance(Clamp(missile->getMissileDistance(), minDistance, maxDistance));
+        missile.setMissileDistance(Clamp(missile.getMissileDistance(), minDistance, maxDistance));
+    }
+}
+
+void updateExplosions(std::forward_list<Explosion> &explosions)
+{
+    // return back to caller if explosion list is empty
+    if (explosions.empty())
+        return;
+
+    auto previousExplosion{explosions.before_begin()};
+
+    for (auto explosion{explosions.begin()}; explosion != explosions.cend(); ++explosion)
+    {
+        constexpr float minExplosionRadius{5.0f};
+        constexpr float maxExplosionRadius{20.0f};
+        const float currentExplosionRadius{explosion->getRadius()};
+
+        // reduce the explosion size if it's > max explosion radius
+        if (currentExplosionRadius >= maxExplosionRadius)
+            explosion->setGrow(-1);
+
+        if (currentExplosionRadius < minExplosionRadius)
+        {
+            explosion = explosions.erase_after(previousExplosion);
+
+            // return back to caller once we reached the
+            // end of the list
+            if (explosion == explosions.cend())
+                return;
+        }
+
+        // grow is 1 by default
+        explosion->setRadius(currentExplosionRadius + explosion->getGrow());
     }
 }
 
@@ -178,8 +226,8 @@ void setupPlayerMissile(Missile &playerMissile)
     // set a fixed position from where the player
     // will shoot their missiles
     playerMissile.setStartPos(Vector2{
-        static_cast<float>(GetScreenWidth()) / 2.0f,
-        static_cast<float>(GetScreenHeight()) / 2.0f,
+        50.0f,
+        static_cast<float>(GetScreenHeight()) - 50.0f,
     });
 
     // and set player's missile end position to starting position
@@ -322,7 +370,7 @@ std::optional<float> getTallestBuilding(const std::forward_list<Rectangle2D> &bu
     return tallestBuilding;
 }
 
-void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rectangle2D> &buildings, float buildingCollisionThreshold)
+void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rectangle2D> &buildings, std::forward_list<Explosion> &explosions, float buildingCollisionThreshold)
 {
     // return if the list is empty
     if (missiles.empty())
@@ -343,6 +391,16 @@ void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rec
         // non-zero means true
         if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
         {
+
+            if (ColorIsEqual(missile->getTint(), GREEN))
+            {
+
+                explosions.push_front(Explosion{
+                    missile->getEndPos(),
+                    5.0f,
+                });
+            }
+
             // erase_after(itr) returns
             // an iterator pointing to the element following
             // the one that was erased, or
@@ -403,6 +461,21 @@ void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rec
                 // update the preceding iterator to point to next iterator
                 // on the list
                 ++previousBuilding;
+            }
+        }
+
+        // check if the current missile collided
+        // with any explosions
+        for (const Explosion &explosion : explosions)
+        {
+            if (CheckCollisionPointCircle(missile->getEndPos(), explosion.getPosition(), explosion.getRadius()))
+            {
+                missile = missiles.erase_after(previousMissile);
+
+                // return back to caller once we reach
+                // the end of the list
+                if (missile == missiles.cend())
+                    return;
             }
         }
 
