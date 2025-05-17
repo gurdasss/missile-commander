@@ -54,8 +54,6 @@ int main()
     // in the building list
     setupBigBuildings(buildings);
 
-    setupSmallBuildings(buildings);
-
     // this object is a class type (std::optional)
     // so make sure before it's non-null
     // before using it
@@ -69,8 +67,18 @@ int main()
     // for collision with all buildings
     const float buildingCollisionThreshold{screenH - *tallestBuilding};
 
+    setupSmallBuildings(buildings);
+
     while (!WindowShouldClose())
     {
+
+        // if there aren't any buildings to collide
+        // simply terminate the game loop
+        if (buildings.empty())
+            break;
+        else
+            applyCollisions(missiles, buildings, buildingCollisionThreshold);
+
         // detect if user had clicked on the screen
         if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT))
         {
@@ -110,8 +118,6 @@ int main()
 
         // UPDATE ALL MISSILES
         updateMissiles(missiles);
-
-        applyCollisions(missiles, buildings, buildingCollisionThreshold);
 
         BeginDrawing();
 
@@ -318,9 +324,8 @@ std::optional<float> getTallestBuilding(const std::forward_list<Rectangle2D> &bu
 
 void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rectangle2D> &buildings, float buildingCollisionThreshold)
 {
-    // return if any of the list is empty
-    // simply return
-    if (missiles.empty() || buildings.empty())
+    // return if the list is empty
+    if (missiles.empty())
         return;
 
     // used to keep track of previous missile
@@ -342,6 +347,12 @@ void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rec
             // an iterator pointing to the element following
             // the one that was erased, or
             // end() if no such element exists.
+
+            // iterator(s) referring to erased
+            // iterator will be left dangling
+            // so we need to update missile iterator
+            // point to the following iterator of
+            // erased iterator.
             missile = missiles.erase_after(previousMissile);
 
             // return back to caller once we reach
@@ -370,28 +381,32 @@ void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rec
                         // an iterator pointing to the element following
                         // the one that was erased, or
                         // end() if no such element exists.
+
+                        // iterator(s) referring to erased
+                        // iterator will be left dangling
+                        // so we need to update missile iterator
+                        // point to the following iterator of
+                        // erased iterator.
                         missile = missiles.erase_after(previousMissile);
 
                         // remove the collided building from the list
                         building = buildings.erase_after(previousBuilding);
 
-                        // return back to caller once we reach
+                        // return back to caller if any
+                        // of the list reach
                         // the end of the list
-                        if (missile == missiles.cend())
-                            return;
-
-                        if (building == buildings.cend())
+                        if (missile == missiles.cend() || building == buildings.cend())
                             return;
                     }
                 }
 
-                // increment the iterator to point to next iterator
+                // update the preceding iterator to point to next iterator
                 // on the list
                 ++previousBuilding;
             }
         }
 
-        // increment the iterator to point to next iterator
+        // update the preceding iterator to point to next iterator
         // on the list
         ++previousMissile;
     }
