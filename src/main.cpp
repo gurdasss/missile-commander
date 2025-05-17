@@ -143,11 +143,9 @@ int main()
         for (const Rectangle2D &building : buildings)
             DrawRectangleRec(building.getRectangle(), building.getTint());
 
-        // UPDATE ALL EXPLOSIONS
+        // Draw ALL EXPLOSIONS
         for (const Explosion &explosion : explosions)
-        {
             DrawCircleV(explosion.getPosition(), explosion.getRadius(), explosion.getTint());
-        }
 
         DrawFPS(0, 0);
 
@@ -392,9 +390,10 @@ void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rec
         if (Vector2Equals(missile->getEndPos(), missile->getTargetPos()))
         {
 
+            // if player's missile reaches its target position
             if (ColorIsEqual(missile->getTint(), GREEN))
             {
-
+                // add a new missile in the list
                 explosions.push_front(Explosion{
                     missile->getEndPos(),
                     5.0f,
@@ -463,19 +462,24 @@ void applyCollisions(std::forward_list<Missile> &missiles, std::forward_list<Rec
                 ++previousBuilding;
             }
         }
-
-        // check if the current missile collided
-        // with any explosions
-        for (const Explosion &explosion : explosions)
+        // if explosion list is not empty
+        // check collision with all explosions
+        else if (!explosions.empty())
         {
-            if (CheckCollisionPointCircle(missile->getEndPos(), explosion.getPosition(), explosion.getRadius()))
-            {
-                missile = missiles.erase_after(previousMissile);
 
-                // return back to caller once we reach
-                // the end of the list
-                if (missile == missiles.cend())
-                    return;
+            // check if the current missile collided
+            // with any explosions
+            for (const Explosion &explosion : explosions)
+            {
+                if (CheckCollisionPointCircle(missile->getEndPos(), explosion.getPosition(), explosion.getRadius()))
+                {
+                    missile = missiles.erase_after(previousMissile);
+
+                    // return back to caller once we reach
+                    // the end of the list
+                    if (missile == missiles.cend())
+                        return;
+                }
             }
         }
 
